@@ -2,9 +2,53 @@ import pygame, sys
 from random import shuffle
 
 
+def run_lobby(background, text_color, height):
+    texts = ["To play this game, use", "the WASD or arrow keys to", "move your player around."]
+    start_texts = ["Press RETURN or SPACE", "to start the game"]
+    font_size = 50*(height/480)
+    font = pygame.font.SysFont("Arial", int(font_size))
+    y = 20 * (height/480)
+    run = True
+    while run:
+        pygame.display.update()
+        screen.fill(background)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
+                    run = False
+        x = font_size - font_size/3
+        for text in texts:
+            screen.blit(font.render(text, True, text_color), (y, x))
+            x += font_size + font_size/3
+        x += font_size * 2
+        for text in start_texts:
+            screen.blit(font.render(text, True, text_color), (y, x))
+            x += font_size + font_size /3
+
+def calc_images(rects):
+    images = {}
+    for name in rects.keys():
+        image = pygame.image.load("images/{}.jpg".format(name))
+        size = image.get_size()
+        sc = list(size)
+        if name == "crocs":
+            sc[1] = int(width/(size[0]/size[1])/1.2)
+            sc[0] = int(width/1.2)
+        elif size[0] > size[1]:
+            sc[1] = int(width/(size[0]/size[1]))
+            sc[0] = width
+        else:
+            sc[0] = int(height/(size[1]/size[0]))
+            sc[1] = height
+        image = pygame.transform.scale(image, tuple(sc))
+        images[name] = image
+    return images
+
 def draw_player(screen, color, coordinates, player_size):
     pygame.draw.circle(screen, color, coordinates, player_size)
-
 
 def draw_items(screen, primary, secondary, height, width, items, player_size, item_size):
     rects_list = []
@@ -64,11 +108,11 @@ def check_limits(number, minimum, maximum, radius):
 
 pygame.init()
 
-items_list = [
+items = [
     "gavel", "pen", "pc", "pin", "usb", "phone", "ear", "crocs", "charlie"
 ]
 
-shuffle(items_list)
+shuffle(items)
 
 width = 800
 height = 575
@@ -84,10 +128,10 @@ fps = 24
 black = (0, 0, 0)
 white = (255, 255, 255)
 red = (185, 0, 0)
+green = (0, 255, 0)
 blue = (0, 0, 255)
 
-lobby_background = black
-lobby_text = white
+run_lobby(black, white, height)
 background = white
 
 player_size = int(30*increase)
@@ -95,31 +139,13 @@ item_size = int(75*increase)
 
 x = int(width / 2)
 y = int(height - player_size)
-
 movement = int(50 * increase)
 
 screen.fill(background)
-rects = draw_items(screen, blue, white, height, width, items_list, player_size, item_size)
-
-images = {}
-for name in rects.keys():
-    image = pygame.image.load("images/{}.jpg".format(name))
-    size = image.get_size()
-    sc = list(size)
-    if name == "crocs":
-        sc[1] = int(width/(size[0]/size[1])/1.2)
-        sc[0] = int(width/1.2)
-    elif size[0] > size[1]:
-        sc[1] = int(width/(size[0]/size[1]))
-        sc[0] = width
-    else:
-        sc[0] = int(height/(size[1]/size[0]))
-        sc[1] = height
-    image = pygame.transform.scale(image, tuple(sc))
-    images[name] = image
+rects = draw_items(screen, blue, white, height, width, items, player_size, item_size)
+images = calc_images(rects)
 
 draw_player(screen, red, (x, y), player_size)
-prev = [None, None]
 pressed = False
 while True:
     screen.fill(background)
@@ -140,7 +166,7 @@ while True:
     y = check_limits(y, 0, height, player_size)
     collided = detect_collision(x, y, rects, item_size, player_size)
     print(collided)
-    draw_items(screen, blue, white, height, width, items_list, player_size, item_size)
+    draw_items(screen, blue, white, height, width, items, player_size, item_size)
     draw_player(screen, red, (x, y), player_size)
     if collided:
         screen.fill(background)
