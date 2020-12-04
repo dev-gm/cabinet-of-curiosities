@@ -45,14 +45,15 @@ def draw_items(screen, primary, secondary, height, width, items, player_size, it
     return rects
 
 
-def detect_collision(x, y, rects, item_size, player_size):
+def detect_collision(coordinates, rects, item_size, player_size):
+    x, y = coordinates
     for name in rects:
         rect = rects.get(name)
         if (x > rect[0] and y > rect[1]) and (x < rect[0] + item_size and y < rect[1] + item_size):
             return name
 
 
-def check_limits(number, minimum, maximum, radius):
+def check_limit(number, minimum, maximum, radius):
     minimum += radius
     maximum -= radius
     if number < minimum:
@@ -61,6 +62,13 @@ def check_limits(number, minimum, maximum, radius):
         number = maximum
     return number
 
+def check_limits(players, minimum, maximum, radius):
+    output = []
+    for player in players:
+        player[0] = check_limit(player[0], minimum, maximum, radius)
+        player[1] = check_limit(player[1], minimum, maximum, radius)
+        output.append(player)
+    return output
 
 pygame.init()
 
@@ -85,21 +93,21 @@ black = (0, 0, 0)
 white = (255, 255, 255)
 red = (185, 0, 0)
 blue = (0, 0, 255)
+green = (0, 255, 0)
 
-lobby_background = black
-lobby_text = white
 background = white
 
 player_size = int(30*increase)
 item_size = int(75*increase)
 
-x = int(width / 2)
-y = int(height - player_size)
+one = [int(width/2) - player_size, int(height - player_size)]
+two = [int(width/2) + player_size, int(height - player_size)]
 
 movement = int(50 * increase)
 
 screen.fill(background)
 rects = draw_items(screen, blue, white, height, width, items_list, player_size, item_size)
+colors = (red, green)
 
 images = {}
 for name in rects.keys():
@@ -118,7 +126,8 @@ for name in rects.keys():
     image = pygame.transform.scale(image, tuple(sc))
     images[name] = image
 
-draw_player(screen, red, (x, y), player_size)
+draw_player(screen, red, one, player_size)
+draw_player(screen, green, two, player_size)
 prev = [None, None]
 pressed = False
 while True:
@@ -128,22 +137,33 @@ while True:
             pygame.quit()
             sys.exit()
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP or event.key == pygame.K_w:
-                y -= movement
-            if event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                x -= movement
-            if event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                y += movement
-            if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                x += movement
-    x = check_limits(x, 0, width, player_size)
-    y = check_limits(y, 0, height, player_size)
-    collided = detect_collision(x, y, rects, item_size, player_size)
+            if event.key == pygame.K_UP:
+                one[1] -= movement
+            if event.key == pygame.K_LEFT:
+                one[0] -= movement
+            if event.key == pygame.K_DOWN:
+                one[1] += movement
+            if event.key == pygame.K_RIGHT:
+                one[0] += movement
+            if event.key == pygame.K_w or event.key == pygame.K_COMMA:
+                two[1] -= movement
+            if event.key == pygame.K_a:
+                two[0] -= movement
+            if event.key == pygame.K_s or event.key == pygame.K_o:
+                two[1] += movement
+            if event.key == pygame.K_d or event.key == pygame.K_e:
+                two[0] += movement
+    one, two = check_limits((one, two), 0, width, player_size)
+    collided = []
+    collided.append(detect_collision(one, rects, item_size, player_size))
+    collided.append(detect_collision(two, rects, item_size, player_size))
     print(collided)
     draw_items(screen, blue, white, height, width, items_list, player_size, item_size)
-    draw_player(screen, red, (x, y), player_size)
-    if collided:
-        screen.fill(background)
-        screen.blit(images[collided], (0, 0))
+    draw_player(screen, red, one, player_size)
+    draw_player(screen, red, two, player_size)
+    for collision in collided:
+        if collision:
+            screen.fill(background)
+            screen.blit(images[collision], (0, 0))
     pygame.display.update()
 
